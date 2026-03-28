@@ -1,10 +1,8 @@
 from contextvars import ContextVar
 from typing import AsyncGenerator
-
 from dependency_injector import containers, providers
 from httpx import AsyncClient, AsyncHTTPTransport, Limits
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.infrastructure.clients.analytics_client import AnalyticsClient
 from src.infrastructure.clients.minio_client import MinioClient
 from src.infrastructure.repositories.report_repository import ReportRepository

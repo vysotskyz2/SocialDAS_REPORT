@@ -1,8 +1,6 @@
 import asyncio
 import uuid
-
 from loguru import logger
-
 from src.infrastructure.clients.analytics_client import AnalyticsClient
 from src.infrastructure.clients.minio_client import MinioClient
 from src.infrastructure.repositories.report_repository import ReportRepository
@@ -13,6 +11,7 @@ from src.infrastructure.schemas.report import (
     ReportListResponse,
 )
 from src.application.services.excel_builder import ExcelBuilder
+from src.infrastructure.tasks.reports import generate_report_task
 
 
 class ReportService:
@@ -40,6 +39,22 @@ class ReportService:
             report_type=request.report_type.value,
         )
 
+        await generate_report_task.kiq(
+            report_id=report.id,
+            user_id=user_id,
+            request_data=request.model_dump(),
+        )
+
+        return self._to_response(report)
+
+    async def process_report_generation(
+        self, report_id: uuid.UUID, user_id: str, request: ReportRequest
+    ) -> None:
+        report = await self._repo.get_by_id(report_id)
+        if not report:
+            logger.error(f"Отчет {report_id} не найден")
+            return
+
         try:
             data = await self._fetch_data(request)
 
@@ -60,17 +75,9 @@ class ReportService:
             await self._minio.upload_file(file_key, excel_bytes)
             await self._repo.update_completed(report.id, file_key, file_name)
 
-            report = await self._repo.get_by_id(report.id)
-            download_url = await self._minio.get_download_url(
-                file_key, self._download_url_expiry
-            )
-            return self._to_response(report, download_url)
-
         except Exception as e:
-            logger.error(f"Report generation failed for {report.id}: {e}")
+            logger.error(f"Ошибка генерации отчета {report.id}: {e}")
             await self._repo.update_failed(report.id, str(e))
-            report = await self._repo.get_by_id(report.id)
-            return self._to_response(report)
 
     async def get_report(
         self, report_id: uuid.UUID, user_id: str
@@ -107,7 +114,7 @@ class ReportService:
             try:
                 await self._minio.delete_file(file_key)
             except Exception as e:
-                logger.warning(f"Failed to delete file from MinIO: {e}")
+                logger.warning(f"Ошибка при удалении из MinIO: {e}")
         return True
 
     async def _fetch_data(self, request: ReportRequest) -> dict:
@@ -147,7 +154,7 @@ class ReportService:
             data = {}
             for key, result in zip(keys, results):
                 if isinstance(result, Exception):
-                    logger.warning(f"Failed to fetch {key}: {result}")
+                    logger.warning(f"Ошибка получения файла {key}: {result}")
                 else:
                     data[key] = result
             return data

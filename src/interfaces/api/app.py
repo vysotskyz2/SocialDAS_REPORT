@@ -1,10 +1,8 @@
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, Request, Depends, status, HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from dependency_injector.wiring import inject, Provide
-
 from src.infrastructure.models.base import async_session_maker
 from src.interfaces.api.containers import Container, db_session_context
 from src.interfaces.api.routers import reports
@@ -24,7 +22,7 @@ async def lifespan(app: FastAPI):
     await container.shutdown_resources()
 
 
-app = FastAPI(title="SocialDAS Report Service", lifespan=lifespan)
+app = FastAPI(lifespan=lifespan)
 
 
 @app.middleware("http")

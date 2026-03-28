@@ -18,4 +18,7 @@ dependencies = [
     "alembic>=1.18.4",
     "openpyxl>=3.1.5",
     "miniopy-async>=1.21.1",
+    "taskiq>=0.11.10",
+    "taskiq-redis>=1.0.2",
+    "redis>=5.2.1",
 ]

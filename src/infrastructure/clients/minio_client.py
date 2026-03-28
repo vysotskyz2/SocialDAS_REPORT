@@ -1,7 +1,7 @@
 from io import BytesIO
 from datetime import timedelta
-
 from miniopy_async import Minio
+from miniopy_async.error import S3Error
 from loguru import logger
 
 
@@ -23,9 +23,12 @@ class MinioClient:
         self._bucket = bucket
 
     async def ensure_bucket(self) -> None:
-        if not await self._client.bucket_exists(self._bucket):
+        try:
             await self._client.make_bucket(self._bucket)
-            logger.info(f"Created MinIO bucket: {self._bucket}")
+            logger.info(f"Создан MinIO bucket: {self._bucket}")
+        except S3Error as e:
+            if e.code != "BucketAlreadyOwnedByYou":
+                raise
 
     async def upload_file(
         self,
@@ -33,13 +36,14 @@ class MinioClient:
         data: bytes,
         content_type: str = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ) -> None:
-        await self._client.put_object(
-            self._bucket,
-            key,
-            BytesIO(data),
-            length=len(data),
-            content_type=content_type,
-        )
+        try:
+            await self._client.put_object(
+                self._bucket, key, BytesIO(data),
+                length=len(data), content_type=content_type,
+            )
+        except S3Error as e:
+            logger.error(f"Ошибка при загрузке {key}: {e}")
+            raise
 
     async def get_download_url(self, key: str, expiry: int = 3600) -> str:
         return await self._client.presigned_get_object(
@@ -49,4 +53,8 @@ class MinioClient:
         )
 
     async def delete_file(self, key: str) -> None:
-        await self._client.remove_object(self._bucket, key)
+        try:
+            await self._client.remove_object(self._bucket, key)
+        except S3Error as e:
+            logger.error(f"Ошибка при удалении {key}: {e}")
+            raise

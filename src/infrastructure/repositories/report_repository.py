@@ -1,9 +1,7 @@
 import uuid
 from datetime import datetime
-
 from sqlalchemy import insert, select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.infrastructure.models.report import Report
 
 

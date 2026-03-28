@@ -1,6 +1,7 @@
 volumes:
   reports_pg_data:
   reports_minio_data:
+  reports_redis_data:
 
 services:
   reports-db:
@@ -15,6 +16,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - microservices_network
+
+  reports-redis:
+    image: redis:7.4-alpine
+    ports:
+      - 6382:6379
+    volumes:
+      - reports_redis_data:/data
     networks:
       - microservices_network
 
@@ -45,6 +55,8 @@ services:
         condition: service_healthy
       reports-minio:
         condition: service_healthy
+      reports-redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -53,6 +65,22 @@ services:
       start_period: 30s
     ports:
       - 8007:8000
+    volumes:
+      - .:/reports_app
+    networks:
+      - microservices_network
+
+  reports-worker:
+    build: .
+    command: taskiq worker src.infrastructure.tasks.broker:broker src.infrastructure.tasks.reports
+    env_file: .env
+    depends_on:
+      reports-db:
+        condition: service_healthy
+      reports-minio:
+        condition: service_healthy
+      reports-redis:
+        condition: service_started
     volumes:
       - .:/reports_app
     networks:

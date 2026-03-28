@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from httpx import AsyncClient
 from loguru import logger
 
@@ -16,7 +15,7 @@ class AnalyticsClient:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            logger.error(f"Analytics API error: {url} — {e}")
+            logger.error(f"Ошибка обработки API Analytic: {url} - {e}")
             return None
 
     @staticmethod

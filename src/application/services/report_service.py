@@ -11,7 +11,6 @@ from src.infrastructure.schemas.report import (
     ReportListResponse,
 )
 from src.application.services.excel_builder import ExcelBuilder
-from src.infrastructure.tasks.reports import generate_report_task
 
 
 class ReportService:
@@ -32,6 +31,8 @@ class ReportService:
     async def generate_report(
         self, user_id: str, request: ReportRequest
     ) -> ReportResponse:
+        from src.infrastructure.tasks.reports import generate_report_task
+
         report = await self._repo.create(
             user_id=user_id,
             platform=request.platform.value,

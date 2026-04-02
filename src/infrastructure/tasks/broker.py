@@ -1,25 +1,28 @@
-from taskiq_redis import RedisAsyncResultBackend, RedisBroker
-from taskiq.receiver import Receiver
-from taskiq_dependencies import DependencyGraph
+from typing import Any
+from taskiq_redis import RedisAsyncResultBackend, ListQueueBroker
 from src.settings import settings
-from src.interfaces.api.containers import Container
 
 result_backend = RedisAsyncResultBackend(
     redis_url=settings.redis.url,
 )
 
-broker = RedisBroker(
+broker = ListQueueBroker(
     url=settings.redis.url,
     result_backend=result_backend,
 ).with_result_backend(result_backend)
 
-container = Container()
-container.wiring_config.modules.append("src.infrastructure.tasks.reports")
 
 @broker.on_event("startup")
-async def startup() -> None:
+async def startup(state: Any) -> None:
+    from src.interfaces.api.containers import Container
+    
+    container = Container()
+    container.wiring_config.modules.append("src.infrastructure.tasks.reports")
     await container.init_resources()
+    state.container = container
+
 
 @broker.on_event("shutdown")
-async def shutdown() -> None:
-    await container.shutdown_resources()
+async def shutdown(state: Any) -> None:
+    if hasattr(state, "container"):
+        await state.container.shutdown_resources()

@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from io import BytesIO
 from loguru import logger
 from src.infrastructure.clients.analytics_client import AnalyticsClient
 from src.infrastructure.clients.minio_client import MinioClient
@@ -93,6 +94,21 @@ class ReportService:
                 report.file_key, self._download_url_expiry
             )
         return self._to_response(report, download_url)
+
+    async def download_report(
+        self, report_id: uuid.UUID, user_id: str
+    ) -> tuple[BytesIO, str] | None:
+        report = await self._repo.get_by_id(report_id)
+        if (
+            not report
+            or report.user_id != user_id
+            or report.status != "completed"
+            or not report.file_key
+        ):
+            return None
+
+        file_content = await self._minio.get_file(report.file_key)
+        return file_content, report.file_name
 
     async def list_reports(
         self, user_id: str, limit: int = 50, offset: int = 0

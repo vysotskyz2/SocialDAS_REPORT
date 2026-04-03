@@ -31,7 +31,7 @@ class AnalyticsClient:
 
     async def get_overview(
         self, platform: str, account_id: str
-    ) -> dict | None:
+    ) -> dict | list | None:
         return await self._get(f"/{platform}/{account_id}/overview")
 
     async def get_followers(
@@ -40,7 +40,7 @@ class AnalyticsClient:
         account_id: str,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
-    ) -> dict | None:
+    ) -> dict | list | None:
         endpoint = "subscribers" if platform == "youtube" else "followers"
         return await self._get(
             f"/{platform}/{account_id}/{endpoint}",
@@ -54,7 +54,7 @@ class AnalyticsClient:
         date_from: datetime | None = None,
         date_to: datetime | None = None,
         limit: int = 100,
-    ) -> dict | None:
+    ) -> dict | list | None:
         endpoint = "posts" if platform == "instagram" else "videos"
         params = {**self._date_params(date_from, date_to), "limit": limit}
         return await self._get(
@@ -67,7 +67,7 @@ class AnalyticsClient:
         account_id: str,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
-    ) -> dict | None:
+    ) -> dict | list | None:
         return await self._get(
             f"/{platform}/{account_id}/engagement",
             params=self._date_params(date_from, date_to),
@@ -80,7 +80,7 @@ class AnalyticsClient:
         date_from: datetime | None = None,
         date_to: datetime | None = None,
         projection_days: int = 14,
-    ) -> dict | None:
+    ) -> dict | list | None:
         params = {
             **self._date_params(date_from, date_to),
             "projection_days": projection_days,
@@ -96,7 +96,7 @@ class AnalyticsClient:
         date_from: datetime | None = None,
         date_to: datetime | None = None,
         limit: int = 50,
-    ) -> dict | None:
+    ) -> dict | list | None:
         params = {**self._date_params(date_from, date_to), "limit": limit}
         return await self._get(
             f"/{platform}/{account_id}/content-performance", params=params
@@ -108,7 +108,7 @@ class AnalyticsClient:
         account_id: str,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
-    ) -> dict | None:
+    ) -> dict | list | None:
         return await self._get(
             f"/{platform}/{account_id}/posting-patterns",
             params=self._date_params(date_from, date_to),
@@ -120,7 +120,7 @@ class AnalyticsClient:
         account_id: str,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
-    ) -> dict | None:
+    ) -> dict | list | None:
         return await self._get(
             f"/{platform}/{account_id}/trends",
             params=self._date_params(date_from, date_to),

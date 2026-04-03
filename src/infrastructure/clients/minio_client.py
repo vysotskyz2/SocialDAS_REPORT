@@ -13,6 +13,7 @@ class MinioClient:
         secret_key: str,
         bucket: str,
         secure: bool = False,
+        public_endpoint: str | None = None,
     ) -> None:
         self._client = Minio(
             endpoint,
@@ -20,7 +21,9 @@ class MinioClient:
             secret_key=secret_key,
             secure=secure,
         )
+        self._endpoint = endpoint
         self._bucket = bucket
+        self._public_endpoint = public_endpoint
 
     async def ensure_bucket(self) -> None:
         try:
@@ -46,11 +49,24 @@ class MinioClient:
             raise
 
     async def get_download_url(self, key: str, expiry: int = 3600) -> str:
-        return await self._client.presigned_get_object(
+        url = await self._client.presigned_get_object(
             self._bucket,
             key,
             expires=timedelta(seconds=expiry),
         )
+        if self._public_endpoint:
+            return url.replace(self._endpoint, self._public_endpoint)
+        return url
+
+    async def get_file(self, key: str) -> BytesIO:
+        try:
+            response = await self._client.get_object(self._bucket, key)
+            content = await response.read()
+            response.close()
+            return BytesIO(content)
+        except S3Error as e:
+            logger.error(f"Ошибка при получении {key}: {e}")
+            raise
 
     async def delete_file(self, key: str) -> None:
         try:

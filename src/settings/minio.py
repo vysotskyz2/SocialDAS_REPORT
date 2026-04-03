@@ -9,6 +9,7 @@ class MinioSettings(BaseSettings):
     )
 
     endpoint: str
+    public_endpoint: str | None = None
     access_key: str
     secret_key: str
     bucket: str

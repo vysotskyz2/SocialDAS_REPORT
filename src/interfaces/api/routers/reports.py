@@ -1,5 +1,6 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from dependency_injector.wiring import inject, Provide
 from src.interfaces.api.containers import Container
 from src.interfaces.api.dependencies.auth import get_current_user
@@ -52,6 +53,28 @@ async def get_report(
             detail="Отчет не найден",
         )
     return report
+
+
+@router.get("/{report_id}/download")
+@inject
+async def download_report(
+    report_id: uuid.UUID,
+    user_id: str = Depends(get_current_user),
+    service: ReportService = Depends(Provide[Container.report_service]),
+):
+    result = await service.download_report(report_id, user_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report file not found",
+        )
+
+    file_content, file_name = result
+    return StreamingResponse(
+        file_content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={file_name}"},
+    )
 
 
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -59,6 +59,7 @@ class Container(containers.DeclarativeContainer):
         secret_key=settings.minio.secret_key,
         bucket=settings.minio.bucket,
         secure=settings.minio.secure,
+        public_endpoint=settings.minio.public_endpoint,
     )
 
     excel_builder = providers.Singleton(ExcelBuilder)

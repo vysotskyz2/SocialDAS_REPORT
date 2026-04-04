@@ -40,6 +40,9 @@ class ReportService:
             account_id=request.account_id,
             report_type=request.report_type.value,
         )
+        
+        # Crucial: commit the session so the worker can see the record
+        await self._repo._session.commit()
 
         await generate_report_task.kiq(
             report_id=report.id,
@@ -52,9 +55,17 @@ class ReportService:
     async def process_report_generation(
         self, report_id: uuid.UUID, user_id: str, request: ReportRequest
     ) -> None:
-        report = await self._repo.get_by_id(report_id)
+        # Retry logic to handle race condition where report might not be committed yet
+        report = None
+        for attempt in range(5):
+            report = await self._repo.get_by_id(report_id)
+            if report:
+                break
+            logger.info(f"Отчет {report_id} пока не найден, попытка {attempt + 1}/5...")
+            await asyncio.sleep(1)
+
         if not report:
-            logger.error(f"Отчет {report_id} не найден")
+            logger.error(f"Отчет {report_id} не найден после 5 попыток")
             return
 
         try:

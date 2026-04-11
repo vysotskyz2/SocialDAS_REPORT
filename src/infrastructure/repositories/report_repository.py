@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import insert, select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.infrastructure.models.report import Report
@@ -63,7 +63,7 @@ class ReportRepository:
                 status="completed",
                 file_key=file_key,
                 file_name=file_name,
-                completed_at=datetime.utcnow(),
+                completed_at=(datetime.utcnow() + timedelta(hours=3)),
             )
         )
 

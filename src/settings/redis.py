@@ -1,3 +1,4 @@
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +14,7 @@ class RedisSettings(BaseSettings):
     db: int
     password: str
 
+    @computed_field
     @property
     def url(self) -> str:
         if self.password:
